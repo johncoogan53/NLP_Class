@@ -32,16 +32,3 @@ class SimplestModel:
 model = SimplestModel()
 print(model.p_space)
 model.train(encodings)
-
-# divide by len encoding because that is n0 + n1 and our new model is n0/(n0+n1)
-
-
-# compute probability
-log_p = sum(
-    math.log(p_space) if encoding == 0 else math.log(1 - p_space)
-    for encoding in encodings
-)
-
-# print
-print(log_p)
-print(math.exp(log_p))
