@@ -6,11 +6,27 @@ from typing import Optional
 text = "Four score and seven years ago, our fathers brought forth, upon this continent, a new nation, conceived in liberty, and dedicated to the proposition that all men are created equal."
 text = (text + " ") * 100  # make the document very long
 
-# tokenize - split the document into a list of little strings, using comprehensions
+# tokenize - split the document into a list of little strings
 tokens = [char for char in text]
 
-# encode as {0, 1}
-encodings = [0 if token == " " else 1 for token in tokens]
+# encode as a one-hot vector, check out ord() and chr() for more info on this comprehension
+vocabulary = [chr(i + ord("a")) for i in range(26)] + [" ", None]
+
+
+def onehot(vocabulary, char):
+    """Check out this embedding comprehension too: for 0 in _"""
+    embedding = [0 for _ in range(len(vocabulary))]
+    try:
+        idx = vocabulary.index(char)
+    except ValueError:
+        idx = len(vocabulary) - 1
+    embedding[idx] = 1
+    return embedding
+
+
+encodings = [
+    onehot(vocabulary, token) for token in tokens
+]  # embed each character in the vocabulary as a vector with a 1 location based on its order in the vocabulary
 
 
 # define model
@@ -19,7 +35,6 @@ class SimplestModel:
 
     def __init__(self) -> None:
         """Initialize."""
-        # Optional[float] is an encoding from typing to say that self.p_space can be a float or None
         self.p_space: Optional[float] = None
 
     def train(self, encodings: list[int]) -> "SimplestModel":
@@ -28,15 +43,13 @@ class SimplestModel:
         return self
 
     def apply(self, encodings: list[int]) -> float:
-        """Compute the log probability of a document."""
+        """Compute the probability of a document."""
         if self.p_space is None:
             raise ValueError("This model is untrained")
         return sum(
             math.log(self.p_space) if encoding == 0 else math.log(1 - self.p_space)
             for encoding in encodings
         )
-
-    # any time you are multiplying probabilities, do it in log space to prevent underflow
 
 
 # train model
