@@ -107,8 +107,9 @@ def main():
         "belly",
         ".",
     ]
-    test_n = 3
-    sent = ["the", "cat", "is"]
+    corp1 = []
+    test_n = 2
+    sent = ["the", ","]
     print(finish_sentence(sent, test_n, corp))
 
     return None
