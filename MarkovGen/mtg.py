@@ -12,20 +12,24 @@ def finish_sentence(sentence, n, corpus, randomize=False):
     """This function will take the input sentence, and use an n-gram model with stupid
     backoff (alpha =1) to assign subsequent words until a '.','?','!' or 10 total tokens
     """
-    vocab = np.unique(np.array(corpus))
+    # parse the corpus into unique values while retaining order (required for deterministic case)
+    v, ind = np.unique(np.array(corpus), return_index=True)
+    vocab = v[np.argsort(ind)]
     final_sentence = np.array(sentence)
     vocabulary = vocab.tolist()
 
+    # initialize the best word's index and associated probability
     best_word_indx = 0
     prob = 0
     # pylint: disable = Consider using enumerate instead of iterating with range and lenPylintC0200:consider-using-enumerate
     while (
+        # run until we get to a sentence of 10 tokens or punctuation
         len(final_sentence) < 10
         and vocabulary[best_word_indx] != "."
         and vocabulary[best_word_indx] != "!"
         and vocabulary[best_word_indx] != "?"
     ):
-        # sentence parse by n
+        # generate the prior n-gram (whole sentence if n is greater than input length)
         if n > len(final_sentence):
             prior = final_sentence
             pass
@@ -33,8 +37,10 @@ def finish_sentence(sentence, n, corpus, randomize=False):
             prior = final_sentence[-(n - 1) :]
             pass
 
+        # reset word index for while loop iterations
         best_word_indx = 0
         prob = 0
+        equal_words = []
         for i in range(len(vocabulary)):
             # append vocabulary words onto prior and compute the backoff probability
             curr_gram = np.append(prior, vocabulary[i])
@@ -42,12 +48,18 @@ def finish_sentence(sentence, n, corpus, randomize=False):
             if curr_prob > prob:  # handles the deterministic case
                 prob = curr_prob
                 best_word_indx = i
-            elif curr_prob == prob and randomize is False:
-                # draw from appropriate distribution?
+            elif curr_prob == prob and randomize is True:
+                # create a list of words of equal probability to select from
+                equal_words.append(vocabulary[i])
                 pass
             else:
                 pass
-        final_sentence = np.append(final_sentence, vocabulary[best_word_indx])
+        if len(equal_words) == 0:  # no words of equal probability found
+            final_sentence = np.append(final_sentence, vocabulary[best_word_indx])
+        else:  # take a random selection from the words of equal probability
+            eq_words = np.array(equal_words)
+            word_chosen = np.random.choice(eq_words)
+            final_sentence = np.append(final_sentence, word_chosen)
         print(final_sentence)
     return final_sentence
 
@@ -55,8 +67,13 @@ def finish_sentence(sentence, n, corpus, randomize=False):
 def compute_prob(n_gram, corpus, n):
     """Take the constructed n-gram from a vocab word and prior and compute backoff prob"""
     probability = 0
+    # recursive base case
+    if n == 1:
+        probability = count(n_gram, corpus, n) / len(corpus)
+        return probability
+    # stupid backoff probabilities
     if count(n_gram, corpus, n) > 0:
-        probability = count(n_gram, corpus, n) / (len(corpus) - (n - 1))
+        probability = count(n_gram, corpus, n) / count(n_gram[: n - 1], corpus, n - 1)
         pass
     else:
         backoff = n_gram[1:]
@@ -65,6 +82,7 @@ def compute_prob(n_gram, corpus, n):
     return probability
 
 
+# count the occurences of an n-gram in a corpus
 def count(n_gram, corpus, n):
     """Compute the occurence of an n-gram in the corpus"""
     gram_count = 0

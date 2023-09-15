@@ -7,7 +7,6 @@ Jelinek 1985 "Markov Source Modeling of Text Generation"
 """
 
 import nltk
-
 from MarkovGen.mtg import finish_sentence
 
 
