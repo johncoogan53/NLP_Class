@@ -7,12 +7,15 @@ Jelinek 1985 "Markov Source Modeling of Text Generation"
 """
 
 import nltk
-from MarkovGen.mtg import finish_sentence
+
+from mtg import finish_sentence
 
 
 def test_generator():
     """Test Markov text generator."""
-    corpus = nltk.word_tokenize(nltk.corpus.gutenberg.raw("austen-sense.txt").lower())
+    corpus = nltk.word_tokenize(
+        nltk.corpus.gutenberg.raw("austen-sense.txt").lower()
+    )
 
     words = finish_sentence(
         ["she", "was", "not"],
