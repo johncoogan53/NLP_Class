@@ -25,7 +25,10 @@ def finish_sentence(sentence, n, corpus, randomize=False):
     n_dict = {}  # frequency dictionary for ngrams
     nminus_dict = {}  # frequency dictionary for n-1_grams
     for i in range(len(corpus)):
-        
+        window1 = tuple(corpus[i : i + n])
+        window2 = tuple(corpus[i + 1 : i + n])
+        n_dict[window1] = n_dict.get(window1, 0) + 1
+        nminus_dict[window2] = nminus_dict.get(window2, 0) + 1
 
     while (
         # run until we get to a sentence of 10 tokens or punctuation
@@ -48,9 +51,9 @@ def finish_sentence(sentence, n, corpus, randomize=False):
         equal_words = []
         for i in range(len(vocabulary)):
             # append vocabulary words onto prior and compute the backoff probability
-            curr_gram = np.append(prior, vocabulary[i])
+            curr_gram = tuple(np.append(prior, vocabulary[i]))
             curr_prob = compute_prob(
-                curr_gram, corpus, n, n_original, n_dict, nminus_dict
+                curr_gram, corpus, n, n_original, n_dict, nminus_dict, prior
             )
             if curr_prob > prob:  # handles the deterministic case
                 prob = curr_prob
@@ -70,22 +73,31 @@ def finish_sentence(sentence, n, corpus, randomize=False):
     return final_sentence
 
 
-def compute_prob(n_gram, corpus, n, n_original, n_dict, nminus_dict):
+def compute_prob(n_gram, corpus, n, n_original, n_dict, nminus_dict, prior_gram):
     """Take the constructed n-gram from a vocab word and prior and compute backoff prob"""
     # re-create dictionaties for frequencies if n original is greater than n (if we are in a backoff case)
+    if n_original > n:
+        for i in range(len(corpus)):
+            window1 = tuple(corpus[i : i + n])
+            window2 = tuple(corpus[i + 1 : i + n])
+            n_dict[window1] = n_dict.get(window1, 0) + 1
+            nminus_dict[window2] = nminus_dict.get(window2, 0) + 1
     probability = 0
     # recursive base case
     if n == 1:
-        probability = count(n_gram, corpus, n) / len(corpus)
+        probability = n_dict[n_gram] / len(corpus)
         return probability
     # stupid backoff probabilities
     if count(n_gram, corpus, n) > 0:
-        probability = count(n_gram, corpus, n) / count(n_gram[: n - 1], corpus, n - 1)
+        probability = n_dict[n_gram] / n_dict[tuple(prior_gram)]
         pass
     else:
         backoff = n_gram[1:]
         back_n = n - 1
-        probability = compute_prob(backoff, corpus, back_n)
+        back_prior = prior_gram[1:]
+        probability = compute_prob(
+            backoff, corpus, back_n, n_original, n_dict, nminus_dict, back_prior
+        )
     return probability
 
 
@@ -115,10 +127,13 @@ def main():
         "his",
         "belly",
         ".",
+        "the",
+        "cat",
+        "is",
     ]
     corp1 = []
-    test_n = 2
-    sent = ["the", ","]
+    test_n = 3
+    sent = ["the", "cat", "is"]
     print(finish_sentence(sent, test_n, corp))
 
     return None
