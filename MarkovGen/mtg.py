@@ -17,11 +17,16 @@ def finish_sentence(sentence, n, corpus, randomize=False):
     vocab = v[np.argsort(ind)]
     final_sentence = np.array(sentence)
     vocabulary = vocab.tolist()
-
     # initialize the best word's index and associated probability
     best_word_indx = 0
     prob = 0
+    n_original = n
     # pylint: disable = Consider using enumerate instead of iterating with range and lenPylintC0200:consider-using-enumerate
+    n_dict = {}  # frequency dictionary for ngrams
+    nminus_dict = {}  # frequency dictionary for n-1_grams
+    for i in range(len(corpus)):
+        
+
     while (
         # run until we get to a sentence of 10 tokens or punctuation
         len(final_sentence) < 10
@@ -44,7 +49,9 @@ def finish_sentence(sentence, n, corpus, randomize=False):
         for i in range(len(vocabulary)):
             # append vocabulary words onto prior and compute the backoff probability
             curr_gram = np.append(prior, vocabulary[i])
-            curr_prob = compute_prob(curr_gram, corpus, n)
+            curr_prob = compute_prob(
+                curr_gram, corpus, n, n_original, n_dict, nminus_dict
+            )
             if curr_prob > prob:  # handles the deterministic case
                 prob = curr_prob
                 best_word_indx = i
@@ -60,12 +67,12 @@ def finish_sentence(sentence, n, corpus, randomize=False):
             eq_words = np.array(equal_words)
             word_chosen = np.random.choice(eq_words)
             final_sentence = np.append(final_sentence, word_chosen)
-        print(final_sentence)
     return final_sentence
 
 
-def compute_prob(n_gram, corpus, n):
+def compute_prob(n_gram, corpus, n, n_original, n_dict, nminus_dict):
     """Take the constructed n-gram from a vocab word and prior and compute backoff prob"""
+    # re-create dictionaties for frequencies if n original is greater than n (if we are in a backoff case)
     probability = 0
     # recursive base case
     if n == 1:
@@ -84,11 +91,13 @@ def compute_prob(n_gram, corpus, n):
 
 # count the occurences of an n-gram in a corpus
 def count(n_gram, corpus, n):
-    """Compute the occurence of an n-gram in the corpus"""
+    """Compute the occurence of an n-gram in the corpus. Use np functions to optimize this high frequency call"""
     gram_count = 0
-    for i in range(len(corpus) - (n - 1)):
-        if np.array_equal(n_gram, corpus[i : i + n]):
-            gram_count = gram_count + 1
+    rolling_view = np.lib.stride_tricks.sliding_window_view(corpus, (n,))
+    gram_count = np.sum(np.all(rolling_view == n_gram, axis=1))
+    # for i in range(len(corpus) - (n - 1)):
+    # if np.array_equal(n_gram, corpus[i : i + n]):
+    # gram_count = gram_count + 1
     return gram_count
 
 
