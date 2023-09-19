@@ -34,7 +34,7 @@ def compute_prob(ngram, prob_mat, corpus):
         denom = prob_mat[n - 1][prior]
         probability = num / denom
     else:
-        probability = 0.4 * compute_prob(ngram[1:], prob_mat, corpus)
+        probability = 0.1 * compute_prob(ngram[1:], prob_mat, corpus)
     return probability
 
 
