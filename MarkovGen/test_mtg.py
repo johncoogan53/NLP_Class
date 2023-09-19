@@ -13,16 +13,23 @@ from mtg import finish_sentence
 
 def test_generator():
     """Test Markov text generator."""
-    corpus = nltk.word_tokenize(
-        nltk.corpus.gutenberg.raw("austen-sense.txt").lower()
-    )
+    corpus = nltk.word_tokenize(nltk.corpus.gutenberg.raw("austen-sense.txt").lower())
 
     words = finish_sentence(
         ["she", "was", "not"],
-        3,
+        1,
         corpus,
         randomize=False,
     )
+    print(words)
+    words1 = finish_sentence(["robot", "was", "not"], 3, corpus)
+    # print(words1)
+    # ['robot'], n=3:
+    # ['robot', ',', 'and', 'the', 'two', 'miss', 'steeles', ',', 'as', 'she']
+    # ['she', 'was', 'not'], n=1:
+    # ['she', 'was', 'not', ',', ',', ',', ',', ',', ',', ',']
+    # ['robot'], n=2:
+    # ['robot', ',', 'and', 'the', 'same', 'time', ',', 'and', 'the', 'same']
     print(words)
     assert words == [
         "she",

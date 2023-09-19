@@ -5,31 +5,54 @@ args:
     n [int]: length of n-grams to use for prediction
     corpus: source corpus [list of tokens]
     randomize: stochastic or deterministic subsequent word selection"""
+from collections import defaultdict
 import numpy as np
 
 
+def n_gram_counter(corpus, n):
+    """generates a dictionary of dictionaries for all n grams in the corpus with an n*len(corpus) efficiency"""
+    ngram_counter = defaultdict(dict)
+    for i in range(len(corpus)):
+        for j in range(n + 1):
+            ngram = tuple(corpus[i : i + j])
+            ngram_counter[j][ngram] = ngram_counter[j].get(ngram, 0) + 1
+    return dict(ngram_counter)
+
+
+def compute_prob(ngram, prob_mat, corpus):
+    """uses the counter matrix to determine the next best word"""
+    probability = 0
+    # recursive base case
+    n = len(ngram)
+    prior = ngram[:-1]
+    if n == 1:
+        probability = prob_mat[n][ngram] / len(corpus)
+        return probability
+
+    if ngram in prob_mat[n].keys():
+        num = prob_mat[n][ngram]
+        denom = prob_mat[n - 1][prior]
+        probability = num / denom
+    else:
+        probability = 0.4 * compute_prob(ngram[1:], prob_mat, corpus)
+    return probability
+
+
 def finish_sentence(sentence, n, corpus, randomize=False):
-    """This function will take the input sentence, and use an n-gram model with stupid
-    backoff (alpha =1) to assign subsequent words until a '.','?','!' or 10 total tokens
-    """
-    # parse the corpus into unique values while retaining order (required for deterministic case)
+    """this function will compute probabilities based off prior sentences and pick the best word"""
     v, ind = np.unique(np.array(corpus), return_index=True)
     vocab = v[np.argsort(ind)]
     final_sentence = np.array(sentence)
     vocabulary = vocab.tolist()
-    # initialize the best word's index and associated probability
-    best_word_indx = 0
-    prob = 0
-    n_original = n
-    # pylint: disable = Consider using enumerate instead of iterating with range and lenPylintC0200:consider-using-enumerate
-    n_dict = {}  # frequency dictionary for ngrams
-    nminus_dict = {}  # frequency dictionary for n-1_grams
-    for i in range(len(corpus)):
-        window1 = tuple(corpus[i : i + n])
-        window2 = tuple(corpus[i + 1 : i + n])
-        n_dict[window1] = n_dict.get(window1, 0) + 1
-        nminus_dict[window2] = nminus_dict.get(window2, 0) + 1
 
+    count_matrix = n_gram_counter(corpus, n)
+    # print(count_matrix[1])
+    # print(f"Count of not be: {count_matrix[2][('not','be')]}")
+    # print(f"Count of not: {count_matrix[1][('not',)]}")
+    # print(f"Count of was not in: {count_matrix[3][('was', 'not', 'in')]}")
+    # print(f"Count of was not: {count_matrix[2][('was', 'not')]}")
+
+    best_word_indx = 0
     while (
         # run until we get to a sentence of 10 tokens or punctuation
         len(final_sentence) < 10
@@ -37,27 +60,29 @@ def finish_sentence(sentence, n, corpus, randomize=False):
         and vocabulary[best_word_indx] != "!"
         and vocabulary[best_word_indx] != "?"
     ):
-        # generate the prior n-gram (whole sentence if n is greater than input length)
         if n > len(final_sentence):
             prior = final_sentence
             pass
         else:
             prior = final_sentence[-(n - 1) :]
             pass
-
-        # reset word index for while loop iterations
         best_word_indx = 0
         prob = 0
         equal_words = []
+        # pylint: disable = Consider using enumerate instead of iterating with range and lenPylintC0200:consider-using-enumerate
         for i in range(len(vocabulary)):
             # append vocabulary words onto prior and compute the backoff probability
+
             curr_gram = tuple(np.append(prior, vocabulary[i]))
-            curr_prob = compute_prob(
-                curr_gram, corpus, n, n_original, n_dict, nminus_dict, prior
-            )
+            if n == 1:
+                curr_gram = (vocabulary[i],)
+            # print(f"computing probability for {curr_gram} ")
+            curr_prob = compute_prob(curr_gram, count_matrix, corpus)
+
             if curr_prob > prob:  # handles the deterministic case
                 prob = curr_prob
                 best_word_indx = i
+                equal_words = [vocabulary[i]]
             elif curr_prob == prob and randomize is True:
                 # create a list of words of equal probability to select from
                 equal_words.append(vocabulary[i])
@@ -71,46 +96,6 @@ def finish_sentence(sentence, n, corpus, randomize=False):
             word_chosen = np.random.choice(eq_words)
             final_sentence = np.append(final_sentence, word_chosen)
     return final_sentence
-
-
-def compute_prob(n_gram, corpus, n, n_original, n_dict, nminus_dict, prior_gram):
-    """Take the constructed n-gram from a vocab word and prior and compute backoff prob"""
-    # re-create dictionaties for frequencies if n original is greater than n (if we are in a backoff case)
-    if n_original > n:
-        for i in range(len(corpus)):
-            window1 = tuple(corpus[i : i + n])
-            window2 = tuple(corpus[i + 1 : i + n])
-            n_dict[window1] = n_dict.get(window1, 0) + 1
-            nminus_dict[window2] = nminus_dict.get(window2, 0) + 1
-    probability = 0
-    # recursive base case
-    if n == 1:
-        probability = n_dict[n_gram] / len(corpus)
-        return probability
-    # stupid backoff probabilities
-    if count(n_gram, corpus, n) > 0:
-        probability = n_dict[n_gram] / n_dict[tuple(prior_gram)]
-        pass
-    else:
-        backoff = n_gram[1:]
-        back_n = n - 1
-        back_prior = prior_gram[1:]
-        probability = compute_prob(
-            backoff, corpus, back_n, n_original, n_dict, nminus_dict, back_prior
-        )
-    return probability
-
-
-# count the occurences of an n-gram in a corpus
-def count(n_gram, corpus, n):
-    """Compute the occurence of an n-gram in the corpus. Use np functions to optimize this high frequency call"""
-    gram_count = 0
-    rolling_view = np.lib.stride_tricks.sliding_window_view(corpus, (n,))
-    gram_count = np.sum(np.all(rolling_view == n_gram, axis=1))
-    # for i in range(len(corpus) - (n - 1)):
-    # if np.array_equal(n_gram, corpus[i : i + n]):
-    # gram_count = gram_count + 1
-    return gram_count
 
 
 def main():
@@ -127,14 +112,39 @@ def main():
         "his",
         "belly",
         ".",
+        "in",
         "the",
         "cat",
         "is",
+        "was",
+        "not",
+        "in",
+        "the",
+        "cat",
+        "ate",
+        "the",
+        "dog",
+        "the",
+        "cat",
+        "is",
+        "huge",
+        "and",
+        "silly",
+        "cat",
+        "is",
+        "fat",
+        "the",
+        "cat",
+        "ran",
+        "the",
+        "cat",
+        "is",
+        "scared",
     ]
     corp1 = []
-    test_n = 3
+    test_n = 1
     sent = ["the", "cat", "is"]
-    print(finish_sentence(sent, test_n, corp))
+    print(finish_sentence(sent, test_n, corp, randomize=True))
 
     return None
 
