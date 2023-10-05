@@ -82,7 +82,7 @@ def gradient_descent_example():
     model = Unigram(len(vocabulary))
     # model1 = Unigram(len(complete_vocab))
     # set number of iterations and learning rate
-    num_iterations = 151
+    num_iterations = 500
     learning_rate = 0.1
 
     loss_vals = []
@@ -134,7 +134,6 @@ def gradient_descent_example():
     true_tensor_32 = true_tensor.to(torch.float32)
 
     one_hot_sum = torch.reshape(torch.sum(x, 1, keepdim=True).T, (1, 28))
-
     min_loss = one_hot_sum @ torch.log(true_tensor_32)
     run_array = np.array(runs)
     print(min_loss)
