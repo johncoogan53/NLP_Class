@@ -1,0 +1,20 @@
+,,,,,,,,
+Word,Test Tag,Predicted Tag,Word,Test Tag,Predicted Tag,Word,Test Tag,Predicted Tag
+Those,DET,DET,The,DET,DET,It,PRON,PRON
+coming,VERB,NOUN,preparatory,ADJ,ADJ,provides,VERB,VERB
+from,ADP,ADP,class,NOUN,NOUN,a,DET,DET
+other,ADJ,ADJ,is,VERB,VERB,natural,ADJ,ADJ
+denominations,NOUN,ADJ,an,DET,DET,transition,NOUN,NOUN
+will,VERB,VERB,introductory,ADJ,ADJ,into,ADP,ADP
+welcome,VERB,VERB,face-to-face,ADJ,ADJ,the,DET,DET
+the,DET,DET,group,NOUN,NOUN,life,NOUN,NOUN
+opportunity,NOUN,NOUN,in,ADP,ADP,of,ADP,ADP
+to,PRT,PRT,which,DET,DET,the,DET,DET
+become,VERB,VERB,new,ADJ,ADJ,local,ADJ,ADJ
+informed,VERB,VERB,members,NOUN,NOUN,church,NOUN,NOUN
+.,.,.,become,VERB,VERB,and,CONJ,CONJ
+,,,acquainted,VERB,VERB,its,DET,DET
+,,,with,ADP,ADP,organizations,NOUN,NOUN
+,,,one,NUM,NUM,.,.,.
+,,,another,DET,NOUN,,,
+,,,.,.,.,,,

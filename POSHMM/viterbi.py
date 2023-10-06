@@ -6,6 +6,7 @@ from typing import Sequence, Tuple, TypeVar
 import nltk
 import numpy as np
 from HMMmatrix import HMMmatrix
+import pandas as pd
 
 
 Q = TypeVar("Q")
@@ -75,6 +76,7 @@ def main():
         zip(matrix_gen.pos_to_index.values(), matrix_gen.pos_to_index.keys())
     )
 
+    display_Frame = pd.DataFrame(columns=["Word", "Test Tag", "Predicted Tag"])
     for sentence in test_sentence:
         # map observations to emissions indices
         obs = []
@@ -82,14 +84,21 @@ def main():
             if word in matrix_gen.unique_words:
                 obs.append(matrix_gen.unique_words[word])
             else:
-                obs.append(t_mat.shape[1] - 1)
+                obs.append(e_mat.shape[1] - 1)
         states, prob = viterbi(obs, pi, t_mat, e_mat)
         display_states = []
         for state in states:
             display_states.append(flipped_pos_map[state])
-        print(f"Test Sentence:  {[t[0] for t in sentence]}")
-        print(f"Test Tags:      {[t[1] for t in sentence]}")
-        print(f"Predicted Tags: {display_states}, with probability {prob} \n")
+        temp_frame = pd.DataFrame(
+            {
+                "Word": [t[0] for t in sentence],
+                "Test Tag": [t[1] for t in sentence],
+                "Predicted Tag": display_states,
+            }
+        )
+        display_Frame = pd.concat([display_Frame, temp_frame], ignore_index=True,axis=0)
+    display_Frame.to_csv("viterbi_output.csv") 
+    print(t_mat)
     return None
 
 
