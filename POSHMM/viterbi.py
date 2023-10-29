@@ -96,9 +96,11 @@ def main():
                 "Predicted Tag": display_states,
             }
         )
-        display_Frame = pd.concat([display_Frame, temp_frame], ignore_index=True,axis=0)
-    display_Frame.to_csv("viterbi_output.csv") 
-    print(t_mat)
+        display_Frame = pd.concat(
+            [display_Frame, temp_frame], ignore_index=True, axis=0
+        )
+    # display_Frame.to_csv("viterbi_output.csv")
+    print(display_Frame)
     return None
 
 
