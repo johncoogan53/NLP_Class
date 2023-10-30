@@ -1,4 +1,4 @@
 # Document Vectors and Author Prediction
 
 
-LSAW2VExperiment/LSAW2Vpic.png
+![LSAW2Vpic](LSAW2VExperiment/LSAW2Vpic.png)
