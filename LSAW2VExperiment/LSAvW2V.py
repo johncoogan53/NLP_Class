@@ -3,6 +3,7 @@ import random
 from typing import List, Mapping, Optional, Sequence
 
 import gensim
+from gensim.models import Word2Vec
 import nltk
 import numpy as np
 from numpy.typing import NDArray
@@ -43,7 +44,7 @@ def sum_token_embeddings(
 
 
 def split_train_test(
-    X: FloatArray, y: FloatArray, test_percent: float = 10
+    X: FloatArray, y: FloatArray, test_percent: float = 20
 ) -> tuple[FloatArray, FloatArray, FloatArray, FloatArray]:
     """Split data into training and testing sets."""
     N = len(y)
@@ -103,9 +104,9 @@ def generate_data_lsa(
     X_train, y_train, X_test, y_test = generate_data_token_counts(
         h0_documents, h1_documents
     )
-    #########################################################################
-    # DO SOMETHING HERE.                                                    #
-    #########################################################################
+    lsa = TruncatedSVD(n_components=300, random_state=0).fit(X_train)
+    X_train = lsa.transform(X_train)
+    X_test = lsa.transform(X_test)
     return X_train, y_train, X_test, y_test
 
 
@@ -113,9 +114,12 @@ def generate_data_word2vec(
     h0_documents: list[list[str]], h1_documents: list[list[str]]
 ) -> tuple[FloatArray, FloatArray, FloatArray, FloatArray]:
     """Generate training and testing data with word2vec."""
-    #########################################################################
-    # DO SOMETHING HERE.                                                    #
-    #########################################################################
+    w2v = Word2Vec(h0_documents + h1_documents, vector_size=300, window=5, min_count=1)
+    keyVec = w2v.wv
+    X = np.array(keyVec.vectors)
+    y: FloatArray = np.array(
+        [0 for sentence in h0_documents] + [1 for sentence in h1_documents]
+    )
     return split_train_test(X, y)
 
 
@@ -151,6 +155,8 @@ def run_experiment() -> None:
     print("word2vec (train):", clf.score(X_train, y_train))
     print("word2vec (test):", clf.score(X_test, y_test))
 
-
-if __name__ == "__main__":
+def main():
+    """Run the experiment."""
     run_experiment()
+if __name__ == "__main__":
+    main()
