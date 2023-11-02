@@ -3,7 +3,7 @@ import random
 from typing import List, Mapping, Optional, Sequence
 
 import gensim
-from gensim.models import Word2Vec
+import gensim.downloader
 import nltk
 import numpy as np
 from numpy.typing import NDArray
@@ -44,7 +44,7 @@ def sum_token_embeddings(
 
 
 def split_train_test(
-    X: FloatArray, y: FloatArray, test_percent: float = 20
+    X: FloatArray, y: FloatArray, test_percent: float = 5
 ) -> tuple[FloatArray, FloatArray, FloatArray, FloatArray]:
     """Split data into training and testing sets."""
     N = len(y)
@@ -109,14 +109,32 @@ def generate_data_lsa(
     X_test = lsa.transform(X_test)
     return X_train, y_train, X_test, y_test
 
-
+def get_vec(token,model):
+    try:
+        word_vec = model[token]
+    except KeyError:
+        word_vec = model['UNK']
+    return word_vec
+    
 def generate_data_word2vec(
     h0_documents: list[list[str]], h1_documents: list[list[str]]
 ) -> tuple[FloatArray, FloatArray, FloatArray, FloatArray]:
     """Generate training and testing data with word2vec."""
-    w2v = Word2Vec(h0_documents + h1_documents, vector_size=300, window=5, min_count=1)
-    keyVec = w2v.wv
-    X = np.array(keyVec.vectors)
+    w2v = gensim.downloader.load("word2vec-google-news-300")
+    X: FloatArray = np.array(
+        [
+            sum_token_embeddings(
+                [get_vec(token,w2v) for token in sentence]
+            )
+            for sentence in h0_documents
+        ]
+        + [
+            sum_token_embeddings(
+                [get_vec(token,w2v) for token in sentence]
+            )
+            for sentence in h1_documents
+        ]
+    )
     y: FloatArray = np.array(
         [0 for sentence in h0_documents] + [1 for sentence in h1_documents]
     )
